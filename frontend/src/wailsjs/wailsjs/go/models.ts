@@ -1,0 +1,147 @@
+export namespace main {
+	
+	export class BatchConversionFileResult {
+	    path: string;
+	    success: boolean;
+	    error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new BatchConversionFileResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.path = source["path"];
+	        this.success = source["success"];
+	        this.error = source["error"];
+	    }
+	}
+	export class BatchConversionResult {
+	    success: boolean;
+	    zipPath: string;
+	    successCount: number;
+	    errorCount: number;
+	    files: BatchConversionFileResult[];
+	
+	    static createFrom(source: any = {}) {
+	        return new BatchConversionResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.zipPath = source["zipPath"];
+	        this.successCount = source["successCount"];
+	        this.errorCount = source["errorCount"];
+	        this.files = this.convertValues(source["files"], BatchConversionFileResult);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class NitroResponse {
+	    path: string;
+	    files: Record<string, Array<number>>;
+	
+	    static createFrom(source: any = {}) {
+	        return new NitroResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.path = source["path"];
+	        this.files = source["files"];
+	    }
+	}
+	export class ProjectSettings {
+	    lastOpenedFile?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ProjectSettings(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.lastOpenedFile = source["lastOpenedFile"];
+	    }
+	}
+	export class RsprProject {
+	    version: string;
+	    name: string;
+	    files: Record<string, string>;
+	    settings: ProjectSettings;
+	    path?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RsprProject(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.version = source["version"];
+	        this.name = source["name"];
+	        this.files = source["files"];
+	        this.settings = this.convertValues(source["settings"], ProjectSettings);
+	        this.path = source["path"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class UpdateInfo {
+	    available: boolean;
+	    currentVersion: string;
+	    latestVersion: string;
+	    releaseName: string;
+	    releaseNotes: string;
+	    downloadUrl: string;
+	    error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new UpdateInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.available = source["available"];
+	        this.currentVersion = source["currentVersion"];
+	        this.latestVersion = source["latestVersion"];
+	        this.releaseName = source["releaseName"];
+	        this.releaseNotes = source["releaseNotes"];
+	        this.downloadUrl = source["downloadUrl"];
+	        this.error = source["error"];
+	    }
+	}
+
+}
+

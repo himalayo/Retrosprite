@@ -1,0 +1,12 @@
+Windows Registry Editor Version 5.00
+
+; Unregister .rspr and .nitro file extensions
+; Double-click this file to remove the registry entries
+
+[-HKEY_CLASSES_ROOT\.rspr]
+
+[-HKEY_CLASSES_ROOT\RetrospritProject]
+
+[-HKEY_CLASSES_ROOT\.nitro]
+
+[-HKEY_CLASSES_ROOT\NitroFile]

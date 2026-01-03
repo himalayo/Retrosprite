@@ -1,0 +1,38 @@
+Windows Registry Editor Version 5.00
+
+; Register .rspr file extension with Retrosprite
+; Double-click this file to add the registry entries
+; Make sure Retrosprite.exe is built in build\bin\ before running this
+
+[HKEY_CLASSES_ROOT\.rspr]
+@="RetrospritProject"
+
+[HKEY_CLASSES_ROOT\RetrospritProject]
+@="Retrosprite Project"
+
+[HKEY_CLASSES_ROOT\RetrospritProject\DefaultIcon]
+@="C:\\Users\\chris\\Documents\\GitHub\\HabVibe\\Retrosprite\\build\\bin\\Retrosprite.exe,0"
+
+[HKEY_CLASSES_ROOT\RetrospritProject\shell]
+
+[HKEY_CLASSES_ROOT\RetrospritProject\shell\open]
+
+[HKEY_CLASSES_ROOT\RetrospritProject\shell\open\command]
+@="\"C:\\Users\\chris\\Documents\\GitHub\\HabVibe\\Retrosprite\\build\\bin\\Retrosprite.exe\" \"%1\""
+
+; Register .nitro file extension with Retrosprite
+[HKEY_CLASSES_ROOT\.nitro]
+@="NitroFile"
+
+[HKEY_CLASSES_ROOT\NitroFile]
+@="Nitro Asset File"
+
+[HKEY_CLASSES_ROOT\NitroFile\DefaultIcon]
+@="C:\\Users\\chris\\Documents\\GitHub\\HabVibe\\Retrosprite\\build\\windows\\nitro-icon.ico,0"
+
+[HKEY_CLASSES_ROOT\NitroFile\shell]
+
+[HKEY_CLASSES_ROOT\NitroFile\shell\open]
+
+[HKEY_CLASSES_ROOT\NitroFile\shell\open\command]
+@="\"C:\\Users\\chris\\Documents\\GitHub\\HabVibe\\Retrosprite\\build\\bin\\Retrosprite.exe\" \"%1\""

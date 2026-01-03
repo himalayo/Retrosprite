@@ -1,0 +1,22 @@
+{
+  "name": "Retrosprite",
+  "outputfilename": "Retrosprite",
+  "frontend:install": "npm install",
+  "frontend:build": "npm run build",
+  "frontend:dev:watcher": "npm run dev",
+  "frontend:dir": "frontend",
+  "wailsjsdir": "./frontend/src/wailsjs",
+  "version": "1.0.0",
+  "author": {
+    "name": "Bopified",
+    "email": "Bopified@proton.me"
+  },
+  "info": {
+    "companyName": "Bopified",
+    "productName": "Retrosprite",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright © 2026 Bopified",
+    "comments": "Habbo Furniture Asset Editor"
+  },
+  "nsisType": "multiple"
+}
