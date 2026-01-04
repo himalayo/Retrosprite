@@ -912,6 +912,11 @@ export const FurniturePreview: React.FC<FurniturePreviewProps> = ({
                                 value={avatarTesting.action}
                                 onChange={(e) => onAvatarTestingChange?.({ ...avatarTesting, action: e.target.value as any })}
                                 sx={{ flex: 1 }}
+                                SelectProps={{
+                                    MenuProps: {
+                                        sx: { zIndex: 10001 }
+                                    }
+                                }}
                             >
                                 <MenuItem value="std">Stand</MenuItem>
                                 <MenuItem value="wlk">Walk</MenuItem>
