@@ -353,6 +353,10 @@ export const FurniturePreview: React.FC<FurniturePreviewProps> = ({
             const regX = assetData.x || 0;
             const regY = assetData.y || 0;
 
+            // Handle sprite trimming offset
+            const trimOffsetX = frameData.spriteSourceSize?.x || 0;
+            const trimOffsetY = frameData.spriteSourceSize?.y || 0;
+
             if (b64) {
                 renderStack.push({
                     key: `sd`,
@@ -362,8 +366,8 @@ export const FurniturePreview: React.FC<FurniturePreviewProps> = ({
                     sy: Math.round(frameData.frame.y),
                     sw: Math.round(frameData.frame.w),
                     sh: Math.round(frameData.frame.h),
-                    dx: Math.round(-regX),
-                    dy: Math.round(-regY),
+                    dx: Math.round(-regX + trimOffsetX),
+                    dy: Math.round(-regY + trimOffsetY),
                     dw: Math.round(frameData.frame.w),
                     dh: Math.round(frameData.frame.h),
                     flipH: assetData.flipH,
@@ -495,6 +499,10 @@ export const FurniturePreview: React.FC<FurniturePreviewProps> = ({
             const regX = assetData.x || 0;
             const regY = assetData.y || 0;
 
+            // Handle sprite trimming offset
+            const trimOffsetX = frameData.spriteSourceSize?.x || 0;
+            const trimOffsetY = frameData.spriteSourceSize?.y || 0;
+
             if (b64) {
                 renderStack.push({
                     key: `${i}-${currentFrame}`,
@@ -507,9 +515,9 @@ export const FurniturePreview: React.FC<FurniturePreviewProps> = ({
                     sh: Math.round(frameData.frame.h),
                     // Screen coordinates
                     // Draw such that the registration point aligns with CenterX/CenterY
-                    // Standard: left = CenterX - RegX
-                    dx: Math.round(-regX),
-                    dy: Math.round(-regY),
+                    // Standard: left = CenterX - RegX + trimOffsetX
+                    dx: Math.round(-regX + trimOffsetX),
+                    dy: Math.round(-regY + trimOffsetY),
                     dw: Math.round(frameData.frame.w),
                     dh: Math.round(frameData.frame.h),
                     flipH: assetData.flipH,
@@ -663,22 +671,129 @@ export const FurniturePreview: React.FC<FurniturePreviewProps> = ({
                     Grid
                 </Button>
 
-                {/* Avatar Controls */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, borderLeft: '1px solid #444', pl: 1, ml: 1 }}>
-                    <Button
-                        variant={avatarTesting?.enabled ? "contained" : "outlined"}
-                        size="small"
-                        startIcon={<PersonIcon />}
-                        onClick={toggleAvatar}
-                        title="Toggle avatar visibility"
-                        color={avatarTesting?.enabled ? "primary" : "inherit"}
-                    >
-                        Avatar
-                    </Button>
+                {/* Avatar Toggle */}
+                <Button
+                    variant={avatarTesting?.enabled ? "contained" : "outlined"}
+                    size="small"
+                    startIcon={<PersonIcon />}
+                    onClick={toggleAvatar}
+                    title="Toggle avatar visibility"
+                    color={avatarTesting?.enabled ? "primary" : "inherit"}
+                    sx={{ ml: 1 }}
+                >
+                    Avatar
+                </Button>
 
-                    {avatarTesting?.enabled && (
-                        <>
-                            <Box sx={{ display: 'grid', gridTemplateColumns: 'auto auto auto', gap: 0.5, ml: 1 }}>
+                {/* FPS Controls */}
+                <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1, minWidth: 200 }}>
+                    <Typography variant="caption" sx={{ color: '#aaa', minWidth: 60 }}>
+                        FPS: {fps}
+                    </Typography>
+                    <Slider
+                        value={fps}
+                        onChange={(_, value) => setFps(value as number)}
+                        min={1}
+                        max={60}
+                        step={1}
+                        sx={{
+                            width: 100,
+                            color: '#1976d2',
+                            '& .MuiSlider-thumb': {
+                                width: 12,
+                                height: 12,
+                            }
+                        }}
+                    />
+                    <IconButton
+                        size="small"
+                        onClick={() => setFps(24)}
+                        title="Reset to default (24 FPS)"
+                        sx={{ color: fps === 24 ? '#666' : '#aaa' }}
+                    >
+                        <RestartAltIcon fontSize="small" />
+                    </IconButton>
+                </Box>
+            </Box>
+
+            {/* Canvas / Render Area */}
+            <Box
+                sx={{
+                    flexGrow: 1,
+                    minHeight: '600px',
+                    height: 0,
+                    bgcolor: '#2b2b2b',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    backgroundImage: `url(${floorTile})`,
+                    backgroundRepeat: 'repeat',
+                    backgroundPosition: `calc(50% + ${pan.x}px) calc(50% + ${pan.y}px)`,
+                    backgroundSize: `${64 * scale}px ${32 * scale}px`,
+                    imageRendering: 'pixelated',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    cursor: isPanning.current ? 'grabbing' : 'grab'
+                }}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+                onWheel={handleWheel}
+            >
+                {/* Furniture Icon - Top Right */}
+                {iconSprite && (
+                    <Box sx={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        width: 42,
+                        height: 42,
+                        bgcolor: '#1a1a1a',
+                        border: '1px solid #444',
+                        borderRadius: '4px',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        overflow: 'hidden',
+                        zIndex: 10000
+                    }}>
+                        <div style={{
+                            width: iconSprite.sw,
+                            height: iconSprite.sh,
+                            backgroundImage: `url(${iconSprite.src})`,
+                            backgroundPosition: `-${iconSprite.sx}px -${iconSprite.sy}px`,
+                            imageRendering: 'pixelated'
+                        }} />
+                    </Box>
+                )}
+
+                {/* Avatar Controls Panel - Bottom Right */}
+                {avatarTesting?.enabled && (
+                    <Box sx={{
+                        position: 'absolute',
+                        bottom: 16,
+                        right: 16,
+                        bgcolor: '#1a1a1a',
+                        border: '1px solid #444',
+                        borderRadius: '8px',
+                        p: 2,
+                        zIndex: 10000,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 2,
+                        minWidth: 300,
+                        maxWidth: 400,
+                        maxHeight: 'calc(100vh - 200px)',
+                        overflow: 'auto',
+                        pointerEvents: 'auto'
+                    }}>
+                        <Typography variant="subtitle2" sx={{ color: '#fff', mb: 1 }}>
+                            Avatar Controls
+                        </Typography>
+
+                        {/* Movement Grid and Sublayer */}
+                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                            <Box sx={{ display: 'grid', gridTemplateColumns: 'auto auto auto', gap: 0.5 }}>
                                 {/* Row 1: Up-Left, Up, Up-Right */}
                                 <IconButton
                                     size="small"
@@ -761,7 +876,11 @@ export const FurniturePreview: React.FC<FurniturePreviewProps> = ({
                                 </IconButton>
                             </Box>
 
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, ml: 1 }}>
+                            {/* Sublayer Control */}
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                <Typography variant="caption" sx={{ color: '#aaa', textAlign: 'center', fontSize: '0.6rem' }}>
+                                    Sub-layer
+                                </Typography>
                                 <IconButton
                                     size="small"
                                     onClick={() => adjustSubLayer(1)}
@@ -782,186 +901,107 @@ export const FurniturePreview: React.FC<FurniturePreviewProps> = ({
                                     -
                                 </IconButton>
                             </Box>
+                        </Box>
 
-                            {/* Habbo Imager Parameters */}
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 2, borderLeft: '1px solid #444', pl: 2 }}>
-                                <TextField
-                                    select
-                                    label="Action"
-                                    size="small"
-                                    value={avatarTesting.action}
-                                    onChange={(e) => onAvatarTestingChange?.({ ...avatarTesting, action: e.target.value as any })}
-                                    sx={{ width: 100 }}
-                                >
-                                    <MenuItem value="std">Stand</MenuItem>
-                                    <MenuItem value="wlk">Walk</MenuItem>
-                                    <MenuItem value="sit">Sit</MenuItem>
-                                    <MenuItem value="lay">Lay</MenuItem>
-                                    <MenuItem value="wav">Wave</MenuItem>
-                                    <MenuItem value="blow">Kiss</MenuItem>
-                                    <MenuItem value="laugh">Laugh</MenuItem>
-                                    <MenuItem value="respect">Respect</MenuItem>
-                                </TextField>
+                        {/* Action and Direction */}
+                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                            <TextField
+                                select
+                                label="Action"
+                                size="small"
+                                value={avatarTesting.action}
+                                onChange={(e) => onAvatarTestingChange?.({ ...avatarTesting, action: e.target.value as any })}
+                                sx={{ flex: 1 }}
+                            >
+                                <MenuItem value="std">Stand</MenuItem>
+                                <MenuItem value="wlk">Walk</MenuItem>
+                                <MenuItem value="sit">Sit</MenuItem>
+                                <MenuItem value="lay">Lay</MenuItem>
+                                <MenuItem value="wav">Wave</MenuItem>
+                                <MenuItem value="blow">Kiss</MenuItem>
+                                <MenuItem value="laugh">Laugh</MenuItem>
+                                <MenuItem value="respect">Respect</MenuItem>
+                            </TextField>
 
-                                <IconButton
-                                    size="small"
-                                    onClick={() => {
-                                        let newDirection: number;
-                                        let newHeadDirection: number;
+                            <IconButton
+                                size="small"
+                                onClick={() => {
+                                    let newDirection: number;
+                                    let newHeadDirection: number;
 
-                                        if (avatarTesting.action === 'sit') {
-                                            // Sitting only has 4 directions: 0, 2, 4, 6
-                                            const sittingDirections = [0, 2, 4, 6];
-                                            const currentIndex = sittingDirections.indexOf(avatarTesting.direction);
-                                            const nextIndex = (currentIndex + 1) % sittingDirections.length;
-                                            newDirection = sittingDirections[nextIndex];
-                                            newHeadDirection = newDirection;
-                                        } else {
-                                            // All other actions use 8 directions
-                                            newDirection = (avatarTesting.direction + 1) % 8;
-                                            newHeadDirection = (avatarTesting.headDirection + 1) % 8;
-                                        }
+                                    if (avatarTesting.action === 'sit') {
+                                        const sittingDirections = [0, 2, 4, 6];
+                                        const currentIndex = sittingDirections.indexOf(avatarTesting.direction);
+                                        const nextIndex = (currentIndex + 1) % sittingDirections.length;
+                                        newDirection = sittingDirections[nextIndex];
+                                        newHeadDirection = newDirection;
+                                    } else {
+                                        newDirection = (avatarTesting.direction + 1) % 8;
+                                        newHeadDirection = (avatarTesting.headDirection + 1) % 8;
+                                    }
 
-                                        onAvatarTestingChange?.({
-                                            ...avatarTesting,
-                                            direction: newDirection,
-                                            headDirection: newHeadDirection
-                                        });
-                                    }}
-                                    title="Rotate avatar"
-                                    sx={{ color: '#aaa' }}
-                                >
-                                    <RotateRightIcon fontSize="small" />
-                                </IconButton>
-
-                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, ml: 1 }}>
-                                    <Typography variant="caption" sx={{ color: '#aaa', fontSize: '0.6rem', textAlign: 'center' }}>
-                                        Height
-                                    </Typography>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => onAvatarTestingChange?.({ ...avatarTesting, heightOffset: avatarTesting.heightOffset - 5 })}
-                                            title="Lower avatar"
-                                            sx={{ color: '#aaa', fontSize: '0.7rem', padding: 0.5 }}
-                                        >
-                                            -
-                                        </IconButton>
-                                        <Typography variant="caption" sx={{ color: '#aaa', minWidth: 30, textAlign: 'center', fontSize: '0.7rem' }}>
-                                            {avatarTesting.heightOffset}
-                                        </Typography>
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => onAvatarTestingChange?.({ ...avatarTesting, heightOffset: avatarTesting.heightOffset + 5 })}
-                                            title="Raise avatar"
-                                            sx={{ color: '#aaa', fontSize: '0.7rem', padding: 0.5 }}
-                                        >
-                                            +
-                                        </IconButton>
-                                    </Box>
-                                </Box>
-
-                                <IconButton
-                                    size="small"
-                                    onClick={() => onAvatarTestingChange?.({
+                                    onAvatarTestingChange?.({
                                         ...avatarTesting,
-                                        tileRow: 15,
-                                        tileCol: 15,
-                                        subLayer: 15,
-                                        direction: 2,
-                                        headDirection: 2,
-                                        heightOffset: 0,
-                                        action: 'std'
-                                    })}
-                                    title="Reset position"
-                                    sx={{ color: '#aaa', ml: 1 }}
-                                >
-                                    <RestartAltIcon fontSize="small" />
-                                </IconButton>
+                                        direction: newDirection,
+                                        headDirection: newHeadDirection
+                                    });
+                                }}
+                                title="Rotate avatar"
+                                sx={{ color: '#aaa' }}
+                            >
+                                <RotateRightIcon />
+                            </IconButton>
+                        </Box>
+
+                        {/* Height Offset and Reset */}
+                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                <Typography variant="caption" sx={{ color: '#aaa', fontSize: '0.6rem', textAlign: 'center' }}>
+                                    Height Offset
+                                </Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => onAvatarTestingChange?.({ ...avatarTesting, heightOffset: avatarTesting.heightOffset - 5 })}
+                                        title="Lower avatar"
+                                        sx={{ color: '#aaa', fontSize: '0.7rem', padding: 0.5 }}
+                                    >
+                                        -
+                                    </IconButton>
+                                    <Typography variant="caption" sx={{ color: '#aaa', minWidth: 30, textAlign: 'center', fontSize: '0.7rem' }}>
+                                        {avatarTesting.heightOffset}
+                                    </Typography>
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => onAvatarTestingChange?.({ ...avatarTesting, heightOffset: avatarTesting.heightOffset + 5 })}
+                                        title="Raise avatar"
+                                        sx={{ color: '#aaa', fontSize: '0.7rem', padding: 0.5 }}
+                                    >
+                                        +
+                                    </IconButton>
+                                </Box>
                             </Box>
-                        </>
-                    )}
-                </Box>
 
-                {/* FPS Controls */}
-                <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1, minWidth: 200 }}>
-                    <Typography variant="caption" sx={{ color: '#aaa', minWidth: 60 }}>
-                        FPS: {fps}
-                    </Typography>
-                    <Slider
-                        value={fps}
-                        onChange={(_, value) => setFps(value as number)}
-                        min={1}
-                        max={60}
-                        step={1}
-                        sx={{
-                            width: 100,
-                            color: '#1976d2',
-                            '& .MuiSlider-thumb': {
-                                width: 12,
-                                height: 12,
-                            }
-                        }}
-                    />
-                    <IconButton
-                        size="small"
-                        onClick={() => setFps(24)}
-                        title="Reset to default (24 FPS)"
-                        sx={{ color: fps === 24 ? '#666' : '#aaa' }}
-                    >
-                        <RestartAltIcon fontSize="small" />
-                    </IconButton>
-                </Box>
-            </Box>
-
-            {/* Canvas / Render Area */}
-            <Box
-                sx={{
-                    flexGrow: 1,
-                    minHeight: '600px',
-                    bgcolor: '#2b2b2b',
-                    position: 'relative',
-                    overflow: 'auto',
-                    backgroundImage: `url(${floorTile})`,
-                    backgroundRepeat: 'repeat',
-                    backgroundPosition: `calc(50% + ${pan.x}px) calc(50% + ${pan.y}px)`,
-                    backgroundSize: `${64 * scale}px ${32 * scale}px`,
-                    imageRendering: 'pixelated',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    cursor: isPanning.current ? 'grabbing' : 'grab'
-                }}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-                onWheel={handleWheel}
-            >
-                {/* Furniture Icon - Top Right */}
-                {iconSprite && (
-                    <Box sx={{
-                        position: 'absolute',
-                        top: 8,
-                        right: 8,
-                        width: 42,
-                        height: 42,
-                        bgcolor: '#1a1a1a',
-                        border: '1px solid #444',
-                        borderRadius: '4px',
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        overflow: 'hidden',
-                        zIndex: 10000
-                    }}>
-                        <div style={{
-                            width: iconSprite.sw,
-                            height: iconSprite.sh,
-                            backgroundImage: `url(${iconSprite.src})`,
-                            backgroundPosition: `-${iconSprite.sx}px -${iconSprite.sy}px`,
-                            imageRendering: 'pixelated'
-                        }} />
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<RestartAltIcon />}
+                                onClick={() => onAvatarTestingChange?.({
+                                    ...avatarTesting,
+                                    tileRow: 15,
+                                    tileCol: 15,
+                                    subLayer: 15,
+                                    direction: 2,
+                                    headDirection: 2,
+                                    heightOffset: 0,
+                                    action: 'std'
+                                })}
+                                title="Reset position"
+                                sx={{ color: '#aaa', borderColor: '#444' }}
+                            >
+                                Reset
+                            </Button>
+                        </Box>
                     </Box>
                 )}
 

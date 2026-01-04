@@ -607,8 +607,8 @@ export const AssetEditor: React.FC<AssetEditorProps> = ({ jsonContent, onUpdate,
                                     onMouseDown={(e) => handleMouseDown(e, key)}
                                     style={{
                                         position: 'absolute',
-                                        left: -(asset.x || 0),
-                                        top: -(asset.y || 0),
+                                        left: -(asset.x || 0) + renderData.offset.x,
+                                        top: -(asset.y || 0) + renderData.offset.y,
                                         zIndex: finalZ,
                                         cursor: 'move',
                                         outline: isSelected ? '1px solid #00ff00' : 'none',
