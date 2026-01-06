@@ -33,6 +33,10 @@ nul
 .claude/
 CLAUDE.md
 
+# Gemini
+.gemini/
+GEMINI.md
+
 # OS specific
 Thumbs.db
 desktop.ini
