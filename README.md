@@ -5,6 +5,7 @@
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)
 ![Version](https://img.shields.io/badge/version-1.1.3-blue.svg)
+[![Download](https://img.shields.io/badge/download-v1.1.3-blue?style=for-the-badge)](https://github.com/Bopified/Retrosprite/releases/tag/v1.1.3)
 
 ## Features
 
