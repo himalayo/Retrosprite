@@ -73,13 +73,16 @@ jobs:
           # Add NSIS to PATH and build installer
           $env:Path += ";C:\Program Files (x86)\NSIS"
           makensis build/windows/installer.nsi
+          
+          # Rename the installer to include the version
+          mv Retrosprite-Installer.exe Retrosprite-Installer-${{ steps.get_version.outputs.VERSION }}.exe
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
           path: |
-            Retrosprite-Installer.exe
+            Retrosprite-Installer-*.exe
             build/bin/Retrosprite.exe
 
   build-macos:
@@ -293,7 +296,7 @@ jobs:
           prerelease: false
           generate_release_notes: true
           files: |
-            artifacts/windows-build/Retrosprite-Installer.exe
+            artifacts/windows-build/Retrosprite-Installer-*.exe
             artifacts/macos-build/Retrosprite-*.dmg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
