@@ -1,0 +1,42 @@
+# Build outputs
+build/bin/
+*.exe
+!build/windows/*.exe
+*.dll
+*.so
+*.dylib
+
+# Frontend dependencies and build artifacts
+frontend/node_modules/
+frontend/dist/
+
+# Go
+*.test
+*.out
+go.work
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary files
+*.tmp
+*.log
+*.md5
+nul
+
+# Claude Code
+.claude/
+CLAUDE.md
+
+# Gemini
+.gemini/
+GEMINI.md
+
+# OS specific
+Thumbs.db
+desktop.ini
