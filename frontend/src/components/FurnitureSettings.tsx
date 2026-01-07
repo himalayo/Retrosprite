@@ -52,6 +52,28 @@ export const FurnitureSettings: React.FC<FurnitureSettingsProps> = ({
         });
     }, []);
 
+    // Sync local state with jsonContent prop changes
+    useEffect(() => {
+        setName(jsonContent.name || "");
+        setLogicType(jsonContent.logicType || "furniture_multistate");
+        setVisualizationType(jsonContent.visualizationType || "furniture_animated");
+        
+        if (jsonContent.logic?.model?.dimensions) {
+            setDimX(jsonContent.logic.model.dimensions.x || 1);
+            setDimY(jsonContent.logic.model.dimensions.y || 1);
+            setDimZ(jsonContent.logic.model.dimensions.z || 1);
+        }
+
+        const mainViz = jsonContent.visualizations?.find(v => v.size === 64) || jsonContent.visualizations?.[0];
+        if (mainViz) {
+            const dirs = Object.keys(mainViz.directions || {});
+            let count = 1;
+            if (dirs.length > 2) count = 4;
+            else if (dirs.length > 1) count = 2;
+            setRotations(count);
+        }
+    }, [jsonContent]);
+
     const mainViz = jsonContent.visualizations?.find(v => v.size === 64) || jsonContent.visualizations?.[0];
 
     const getRotationCount = () => {
