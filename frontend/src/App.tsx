@@ -43,7 +43,7 @@ import { BatchConverterDialog } from './components/BatchConverterDialog';
 import type { NitroJSON, RsprProject, AvatarTestingState } from './types';
 import { useNotification } from './hooks/useNotification';
 import Notification from './components/Notification';
-import { decodeContent, encodeContent, getFileNameFromPath, isImageFile, isTextFile } from './utils/file_utils';
+import { decodeContent, encodeContent, isImageFile, isTextFile } from './utils/file_utils';
 import { useProject } from './hooks/useProject';
 
 const darkTheme = createTheme({
