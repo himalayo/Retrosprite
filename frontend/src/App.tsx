@@ -683,64 +683,8 @@ function App() {
     const handleRename = async (newName: string) => {
         if (!selectedProject) return;
         const project = projects[selectedProject];
-
-        try {
-            // If there are unsaved changes, save them first to preserve all modifications
-            if (isDirty) {
-                const filesToSave = { ...project.files };
-
-                // Update current file content if it's a text file
-                if (selectedFile && isTextFile(selectedFile)) {
-                    filesToSave[selectedFile] = encodeContent(fileContent);
-                }
-
-                // Save to disk first
-                if (project.path.endsWith('.rspr')) {
-                    const rsprData: RsprProject = {
-                        version: "1.0",
-                        name: selectedProject.replace('.rspr', ''),
-                        files: filesToSave,
-                        settings: {
-                            lastOpenedFile: selectedFile || undefined
-                        }
-                    };
-                    await SaveProject(project.path, rsprData as any, rsprData.name);
-                } else {
-                    const nitroName = selectedProject.replace(/\.(nitro|swf|rspr)$/i, '');
-                    // @ts-ignore
-                    await SaveNitroFile(project.path, filesToSave as any, nitroName);
-                }
-
-                // Update in-memory state
-                projectHook.updateSelectedProject(filesToSave);
-            }
-
-            // Try to find the original name from the asset keys
-            let oldName = "";
-            if (parsedJson?.assets) {
-                const firstAssetKey = Object.keys(parsedJson.assets)[0];
-                if (firstAssetKey) {
-                    const parts = firstAssetKey.split('_64_');
-                    if (parts.length > 1) {
-                        oldName = parts[0];
-                    } else {
-                        const partsIcon = firstAssetKey.split('_icon_');
-                        if (partsIcon.length > 1) {
-                            oldName = partsIcon[0];
-                        }
-                    }
-                }
-            }
-
-            // Now perform the rename with saved data
-            // @ts-ignore - renameFurnitureData=true to rename all furniture references
-            const result = await RenameNitroProject(project.path, newName, oldName, true);
-            if (result) {
-                // For .rspr files, the path stays the same (furniture rename, not file rename)
-                // For .nitro files, the path changes
-                const pathChanged = result.path !== project.path;
-                projectHook.onRenameNitroFile(result, pathChanged);
-
+        projectHook.handleRename(newName, isDirty, selectedFile, fileContent, parsedJson,
+            (result, pathChanged) => {
                 if (pathChanged) {
                     addToRecent(result.path);
                     removeFromRecent(project.path);
@@ -751,11 +695,12 @@ function App() {
                 setIsDirty(false);
 
                 showNotification(`Renamed to ${newName} successfully!`, "success");
+            },
+            (err) => {
+                console.error("Failed to rename:", err);
+                showNotification("Failed to rename: " + err, "error");
             }
-        } catch (err) {
-            console.error("Failed to rename:", err);
-            showNotification("Failed to rename: " + err, "error");
-        }
+        );
     };
 
     const handleSaveFileAs = async (projectName: string, fileName: string) => {
