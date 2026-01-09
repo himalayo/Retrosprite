@@ -607,6 +607,9 @@ export const SpriteEditor: React.FC<SpriteEditorProps> = ({ jsonContent, imageCo
 
         const newJson = JSON.parse(JSON.stringify(jsonContent)) as typeof jsonContent;
 
+        // Track which layers and frame numbers are being deleted
+        const deletedFrames: Map<string, Set<number>> = new Map(); // layer -> set of frame numbers
+
         selectedSprites.forEach(spriteName => {
             // Remove from spritesheet frames
             if (newJson.spritesheet!.frames[spriteName]) {
@@ -622,6 +625,19 @@ export const SpriteEditor: React.FC<SpriteEditorProps> = ({ jsonContent, imageCo
                 assetKey = spriteName.slice(0, -4);
             }
 
+            // Extract layer and frame info for animation cleanup
+            const parts = assetKey.split('_');
+            if (parts.length >= 3) {
+                const layer = parts[parts.length - 3]; // layer letter (a, b, c, etc.)
+                const frameNum = parseInt(parts[parts.length - 1]); // frame number
+                if (!isNaN(frameNum)) {
+                    if (!deletedFrames.has(layer)) {
+                        deletedFrames.set(layer, new Set());
+                    }
+                    deletedFrames.get(layer)!.add(frameNum);
+                }
+            }
+
             // Remove the asset
             if (newJson.assets![assetKey]) {
                 delete newJson.assets![assetKey];
@@ -635,6 +651,53 @@ export const SpriteEditor: React.FC<SpriteEditorProps> = ({ jsonContent, imageCo
                 }
             });
         });
+
+        // Clean up animation definitions that reference deleted frames
+        if (newJson.visualizations) {
+            newJson.visualizations.forEach(viz => {
+                if (viz.animations) {
+                    Object.keys(viz.animations).forEach(animKey => {
+                        const anim = viz.animations![animKey];
+                        if (anim.layers) {
+                            Object.keys(anim.layers).forEach(layerIdxStr => {
+                                const layerIdx = parseInt(layerIdxStr);
+                                const layerChar = String.fromCharCode(97 + layerIdx); // a, b, c...
+
+                                if (deletedFrames.has(layerChar)) {
+                                    const deletedFrameNums = deletedFrames.get(layerChar)!;
+                                    const layerAnim = anim.layers![layerIdxStr];
+
+                                    if (layerAnim.frameSequences) {
+                                        Object.keys(layerAnim.frameSequences).forEach(seqKey => {
+                                            const seq = layerAnim.frameSequences![seqKey];
+                                            if (seq.frames) {
+                                                // Remove deleted frames from the sequence
+                                                Object.keys(seq.frames).forEach(frameKey => {
+                                                    const frame = seq.frames![frameKey];
+                                                    if (deletedFrameNums.has(frame.id)) {
+                                                        delete seq.frames![frameKey];
+                                                    }
+                                                });
+
+                                                // If sequence is now empty, remove it
+                                                if (Object.keys(seq.frames).length === 0) {
+                                                    delete layerAnim.frameSequences![seqKey];
+                                                }
+                                            }
+                                        });
+
+                                        // If no sequences left, remove the layer animation
+                                        if (Object.keys(layerAnim.frameSequences).length === 0) {
+                                            delete anim.layers![layerIdxStr];
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        }
 
         onUpdate(newJson);
         showNotification(`${selectedSprites.length} sprite(s) deleted successfully`, 'success');
