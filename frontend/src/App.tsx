@@ -42,6 +42,9 @@ import { SplashScreen } from './components/SplashScreen';
 import { UpdateDialog } from './components/UpdateDialog';
 import { BatchConverterDialog } from './components/BatchConverterDialog';
 import type { NitroJSON, RsprProject, AvatarTestingState } from './types';
+import { useNotification } from './hooks/useNotification';
+import Notification from './components/Notification';
+import { decodeContent, encodeContent, getFileNameFromPath, isImageFile, isTextFile } from './utils/file_utils';
 
 const darkTheme = createTheme({
     palette: {
@@ -87,6 +90,8 @@ interface ProjectData {
 }
 
 function App() {
+    const {notificationState, closeNotification, showNotification} = useNotification();
+
     const [projects, setProjects] = useState<Record<string, ProjectData>>({});
     const [selectedProject, setSelectedProject] = useState<string | null>(null);
     const [selectedFile, setSelectedFile] = useState<string | null>(null);
@@ -228,9 +233,6 @@ function App() {
         setIsSidebarOpen(!isSidebarOpen);
     };
 
-    const [snackbarOpen, setSnackbarOpen] = useState(false);
-    const [snackbarMessage, setSnackbarMessage] = useState("");
-    const [snackbarSeverity, setSnackbarSeverity] = useState<AlertColor>("info");
 
     const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
     const [updateInfo, setUpdateInfo] = useState<any>(null);
@@ -272,39 +274,6 @@ function App() {
         setPendingConfirmAction(null);
     };
 
-    const showNotification = (message: string, severity: AlertColor = "info") => {
-        setSnackbarMessage(message);
-        setSnackbarSeverity(severity);
-        setSnackbarOpen(true);
-    };
-
-    const handleCloseSnackbar = () => {
-        setSnackbarOpen(false);
-    };
-
-    const decodeContent = (b64: string) => {
-        try {
-            return atob(b64);
-        } catch (e) {
-            return "";
-        }
-    };
-
-    const encodeContent = (str: string) => {
-        return btoa(str);
-    };
-
-    const isTextFile = (name: string) => {
-        return name.endsWith('.json') || name.endsWith('.xml') || name.endsWith('.txt') || name.endsWith('.atlas');
-    };
-
-    const isImageFile = (name: string) => {
-        return name.endsWith('.png') || name.endsWith('.jpg') || name.endsWith('.jpeg');
-    };
-
-    const getFileNameFromPath = (path: string) => {
-        return path.split(/[\\/]/).pop() || path;
-    };
 
     const performOpenFile = async () => {
         try {
@@ -1501,12 +1470,8 @@ function App() {
                     </Tooltip>
                 </Box>
             )}
-
-            <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleCloseSnackbar}>
-                <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }}>
-                    {snackbarMessage}
-                </Alert>
-            </Snackbar>
+            
+            <Notification state={notificationState} closeNotification={closeNotification} />
 
             <UpdateDialog
                 open={updateDialogOpen}
