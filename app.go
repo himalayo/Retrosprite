@@ -464,6 +464,14 @@ func resizeImage(src image.Image, maxSize int) image.Image {
 	dstW := int(float64(srcW) * scale)
 	dstH := int(float64(srcH) * scale)
 
+	// Ensure minimum dimensions of 1 pixel to avoid invalid image sizes
+	if dstW < 1 {
+		dstW = 1
+	}
+	if dstH < 1 {
+		dstH = 1
+	}
+
 	dst := image.NewRGBA(image.Rect(0, 0, dstW, dstH))
 
 	// Nearest-neighbor scaling for speed
