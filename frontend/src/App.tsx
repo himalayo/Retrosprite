@@ -8,10 +8,9 @@ import { OpenNitroFile, SaveNitroFile, ConvertSWF, LoadNitroFile, RenameNitroPro
 
 
 import {
-    Box, TextField, CssBaseline, ThemeProvider, createTheme, Tabs, Tab, Snackbar, Alert, Typography, IconButton,
+    Box, TextField, CssBaseline, ThemeProvider, createTheme, Tabs, Tab, Typography, IconButton,
     Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button
 } from '@mui/material';
-import type { AlertColor } from '@mui/material';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import TextSnippetIcon from '@mui/icons-material/TextSnippet';
 import PhotoIcon from '@mui/icons-material/Photo';
@@ -45,6 +44,7 @@ import type { NitroJSON, RsprProject, AvatarTestingState } from './types';
 import { useNotification } from './hooks/useNotification';
 import Notification from './components/Notification';
 import { decodeContent, encodeContent, getFileNameFromPath, isImageFile, isTextFile } from './utils/file_utils';
+import { useProject } from './hooks/useProject';
 
 const darkTheme = createTheme({
     palette: {
@@ -81,19 +81,11 @@ const darkTheme = createTheme({
     },
 });
 
-interface ProjectData {
-    path: string;
-    files: Record<string, string>;
-    settings?: {
-        lastOpenedFile?: string;
-    };
-}
-
 function App() {
     const {notificationState, closeNotification, showNotification} = useNotification();
 
-    const [projects, setProjects] = useState<Record<string, ProjectData>>({});
-    const [selectedProject, setSelectedProject] = useState<string | null>(null);
+    const {projects, selectedProject, ... projectHook} = useProject();
+
     const [selectedFile, setSelectedFile] = useState<string | null>(null);
     const [fileContent, setFileContent] = useState<string>("");
     const [tabIndex, setTabIndex] = useState(0);
@@ -279,16 +271,7 @@ function App() {
         try {
             const result = await OpenNitroFile();
             if (result) {
-                const projectName = getFileNameFromPath(result.path);
-                setProjects(prev => ({
-                    ...prev,
-                    [projectName]: {
-                        path: result.path,
-                        files: result.files as any
-                    }
-                }));
-                // Auto select the new project
-                setSelectedProject(projectName);
+                projectHook.onOpenFile(result);
                 setSelectedFile(null);
                 setFileContent("");
                 addToRecent(result.path);
@@ -314,16 +297,7 @@ function App() {
             const result = await OpenProject();
             if (result && result.files && result.path) {
                 const path = result.path;
-                const projectName = getFileNameFromPath(path);
-                setProjects(prev => ({
-                    ...prev,
-                    [projectName]: {
-                        path: path,
-                        files: result.files as any
-                    }
-                }));
-
-                setSelectedProject(projectName);
+                projectHook.onOpenFile(result);
                 setSelectedFile(null);
                 setFileContent("");
 
@@ -351,16 +325,7 @@ function App() {
                  const result = await LoadProject(path);
                  if (result && result.files && result.path) {
                      const resultPath = result.path;
-                     const projectName = getFileNameFromPath(resultPath);
-                     setProjects(prev => ({
-                         ...prev,
-                         [projectName]: {
-                             path: resultPath,
-                             files: result.files as any
-                         }
-                     }));
-
-                     setSelectedProject(projectName);
+                     projectHook.onOpenFile(result);
                      setSelectedFile(null);
                      setFileContent("");
 
@@ -372,16 +337,7 @@ function App() {
                 // @ts-ignore
                 const result = await LoadNitroFile(path);
                 if (result) {
-                    const projectName = getFileNameFromPath(result.path);
-                    setProjects(prev => ({
-                        ...prev,
-                        [projectName]: {
-                            path: result.path,
-                            files: result.files as any
-                        }
-                    }));
-                    // Auto select the new project
-                    setSelectedProject(projectName);
+                    projectHook.onOpenFile(result);
                     setSelectedFile(null);
                     setFileContent("");
                     addToRecent(path); // Update order
@@ -404,13 +360,8 @@ function App() {
 
 
     const performCloseProject = (projectName: string) => {
-        setProjects(prev => {
-            const next = { ...prev };
-            delete next[projectName];
-            return next;
-        });
+        projectHook.closeProject(projectName);
         if (selectedProject === projectName) {
-            setSelectedProject(null);
             setSelectedFile(null);
             setFileContent("");
             setIsDirty(false);
@@ -455,14 +406,7 @@ function App() {
                 if (!result) return;
             }
 
-            setProjects(prev => ({
-                ...prev,
-                [selectedProject]: {
-                    ...prev[selectedProject],
-                    files: filesToSave
-                }
-            }));
-
+            projectHook.updateSelectedProject(filesToSave);
             setIsDirty(false);
             showNotification("Saved successfully!", "success");
         } catch (err) {
@@ -496,24 +440,8 @@ function App() {
             // @ts-ignore
             const savedPath = await SaveProject(savePath, rsprData as any, rsprData.name);
             if (savedPath) {
-                 const newProjectName = getFileNameFromPath(savedPath);
+                projectHook.onSaveAs(savedPath, newProjectName, filesToSave, rsprData);
                  
-                 // Update state with new path/name
-                 setProjects(prev => {
-                    const next = { ...prev };
-                    // If name changed, delete old key
-                    if (newProjectName !== selectedProject) {
-                        delete next[selectedProject];
-                    }
-                    next[newProjectName] = {
-                        path: savedPath,
-                        files: filesToSave,
-                        settings: rsprData.settings
-                    };
-                    return next;
-                });
-                
-                setSelectedProject(newProjectName);
                 addToRecent(savedPath);
                 setIsDirty(false);
                 showNotification("Project saved.", "success");
@@ -596,14 +524,7 @@ function App() {
                 resultFiles = result.files as any;
             }
             
-            setProjects(prev => ({
-                ...prev,
-                [selectedProject]: {
-                    ...prev[selectedProject],
-                    files: resultFiles
-                }
-            }));
-
+            projectHook.updateSelectedProject(resultFiles);
             // If viewing a file, reload its content from the freshly loaded project
             if (selectedFile) {
                 // @ts-ignore
@@ -640,15 +561,7 @@ function App() {
             const result = await ConvertSWF() as any;
             if (result) {
                 // Auto open the converted project
-                const projectName = getFileNameFromPath(result.path);
-                setProjects(prev => ({
-                    ...prev,
-                    [projectName]: {
-                        path: result.path,
-                        files: result.files as any
-                    }
-                }));
-                setSelectedProject(projectName);
+                projectHook.onOpenFile(result);
                 setSelectedFile(null);
                 setFileContent("");
                 addToRecent(result.path);
@@ -663,7 +576,7 @@ function App() {
     };
 
     const performProjectSelect = (projectName: string) => {
-        setSelectedProject(projectName);
+        projectHook.selectProject(projectName);
         // Don't auto-select a file, just focus the project in tree
     };
 
@@ -679,24 +592,7 @@ function App() {
         // If switching from another text file where we have pending edits in 'fileContent', 
         // strictly speaking we should probably save them to the project state first.
         // For now, let's just update the previous file in the project state before switching.
-        if (selectedProject && selectedFile && isTextFile(selectedFile)) {
-            setProjects(prev => {
-                const currentProj = prev[selectedProject];
-                if (!currentProj) return prev;
-                return {
-                    ...prev,
-                    [selectedProject]: {
-                        ...currentProj,
-                        files: {
-                            ...currentProj.files,
-                            [selectedFile]: encodeContent(fileContent)
-                        }
-                    }
-                };
-            });
-        }
-
-        setSelectedProject(projectName);
+        projectHook.onFileSelect(projectName, selectedFile, fileContent);
         setSelectedFile(fileName);
 
         const project = projects[projectName];
@@ -757,17 +653,7 @@ function App() {
                 const imageName = newJson.spritesheet.meta.image;
                 updates[imageName] = newImage;
             }
-
-            setProjects(prev => ({
-                ...prev,
-                [selectedProject]: {
-                    ...prev[selectedProject],
-                    files: {
-                        ...prev[selectedProject].files,
-                        ...updates
-                    }
-                }
-            }));
+            projectHook.onJsonUpdate(updates);
         }
     };
 
@@ -826,13 +712,7 @@ function App() {
                 }
 
                 // Update in-memory state
-                setProjects(prev => ({
-                    ...prev,
-                    [selectedProject]: {
-                        ...prev[selectedProject],
-                        files: filesToSave
-                    }
-                }));
+                projectHook.updateSelectedProject(filesToSave);
             }
 
             // Try to find the original name from the asset keys
@@ -858,30 +738,10 @@ function App() {
             if (result) {
                 // For .rspr files, the path stays the same (furniture rename, not file rename)
                 // For .nitro files, the path changes
-                const newProjectName = getFileNameFromPath(result.path);
                 const pathChanged = result.path !== project.path;
-
-                setProjects(prev => {
-                    const next = { ...prev };
-                    if (pathChanged) {
-                        // File was renamed (.nitro files)
-                        delete next[selectedProject];
-                        next[newProjectName] = {
-                            path: result.path,
-                            files: result.files as any
-                        };
-                    } else {
-                        // Just update the files in place (.rspr files)
-                        next[selectedProject] = {
-                            ...next[selectedProject],
-                            files: result.files as any
-                        };
-                    }
-                    return next;
-                });
+                projectHook.onRenameNitroFile(result, pathChanged);
 
                 if (pathChanged) {
-                    setSelectedProject(newProjectName);
                     addToRecent(result.path);
                     removeFromRecent(project.path);
                 }
@@ -957,46 +817,23 @@ function App() {
             setProjectToRename(null);
             return;
         }
+        projectHook.renameProject(projectToRename, newName,
+            () => showNotification("Project not found", "error"), 
+            () => showNotification("Failed to rename project: Invalid response", "error"),
+            (result, project) => {
+                setSelectedFile(null);
+                addToRecent(result.path);
+                removeFromRecent(project.path);
 
-        try {
-            const project = projects[projectToRename];
-            if (!project) {
-                showNotification("Project not found", "error");
-                return;
+                showNotification(`Project renamed to ${newName}.rspr`, "success");
+                setRenameProjectDialogOpen(false);
+                setProjectToRename(null);
+            },
+            (err) => {
+                console.error("Failed to rename project:", err);
+                showNotification("Failed to rename project: " + err, "error");
             }
-
-            // @ts-ignore - renameFurnitureData=false to only rename the project file, not the furniture data
-            const result = await RenameNitroProject(project.path, newName, '', false);
-
-            if (!result || !result.files) {
-                showNotification("Failed to rename project: Invalid response", "error");
-                return;
-            }
-
-            const newProjectName = getFileNameFromPath(result.path);
-
-            setProjects(prev => {
-                const next = { ...prev };
-                delete next[projectToRename];
-                next[newProjectName] = {
-                    path: result.path,
-                    files: result.files as any
-                };
-                return next;
-            });
-
-            setSelectedProject(newProjectName);
-            setSelectedFile(null);
-            addToRecent(result.path);
-            removeFromRecent(project.path);
-
-            showNotification(`Project renamed to ${newName}.rspr`, "success");
-            setRenameProjectDialogOpen(false);
-            setProjectToRename(null);
-        } catch (err) {
-            console.error("Failed to rename project:", err);
-            showNotification("Failed to rename project: " + err, "error");
-        }
+        );
     };
 
     const handleConfirmRenameFile = async () => {
@@ -1009,52 +846,27 @@ function App() {
             return;
         }
 
-        try {
-            const project = projects[projectName];
-            if (!project) return;
-
-            const fileContent = project.files[fileName];
-            if (!fileContent) return;
-
-            // Update project with renamed file
-            setProjects(prev => ({
-                ...prev,
-                [projectName]: {
-                    ...prev[projectName],
-                    files: {
-                        ...prev[projectName].files,
-                        [newFileName]: fileContent
-                    }
+        projectHook.onConfirmRenameFile(
+            projectName, fileName,
+            newFileName,
+            () => {
+                // Update selected file if it was the renamed one
+                if (selectedProject === projectName && selectedFile === fileName) {
+                    setSelectedFile(newFileName);
                 }
-            }));
 
-            // Remove old file
-            setProjects(prev => {
-                const updatedFiles = { ...prev[projectName].files };
-                delete updatedFiles[fileName];
-                return {
-                    ...prev,
-                    [projectName]: {
-                        ...prev[projectName],
-                        files: updatedFiles
-                    }
-                };
-            });
-
-            // Update selected file if it was the renamed one
-            if (selectedProject === projectName && selectedFile === fileName) {
-                setSelectedFile(newFileName);
+                showNotification(`File renamed to "${newFileName}"`, "success");
+            },
+            (err) => {
+                console.error("Failed to rename file:", err);
+                showNotification("Failed to rename file: " + err, "error");
+            },
+            () => {
+                setRenameFileDialogOpen(false);
+                setFileToRename(null);
+                setNewFileName("");
             }
-
-            showNotification(`File renamed to "${newFileName}"`, "success");
-        } catch (err) {
-            console.error("Failed to rename file:", err);
-            showNotification("Failed to rename file: " + err, "error");
-        } finally {
-            setRenameFileDialogOpen(false);
-            setFileToRename(null);
-            setNewFileName("");
-        }
+        );
     };
 
     const handleDeleteFile = (projectName: string, fileName: string) => {
@@ -1065,35 +877,24 @@ function App() {
     const handleConfirmDeleteFile = async () => {
         if (!fileToDelete) return;
         const { projectName, fileName } = fileToDelete;
+        projectHook.onConfirmDeleteFile(projectName, fileName, () => {
+                // Clear selection if it was the deleted file
+                if (selectedProject === projectName && selectedFile === fileName) {
+                    setSelectedFile(null);
+                    setFileContent("");
+                }
 
-        try {
-            // Remove file from project
-            setProjects(prev => {
-                const updatedFiles = { ...prev[projectName].files };
-                delete updatedFiles[fileName];
-                return {
-                    ...prev,
-                    [projectName]: {
-                        ...prev[projectName],
-                        files: updatedFiles
-                    }
-                };
-            });
-
-            // Clear selection if it was the deleted file
-            if (selectedProject === projectName && selectedFile === fileName) {
-                setSelectedFile(null);
-                setFileContent("");
+                showNotification(`File "${fileName}" deleted`, "success");
+            },
+            (err) => {
+                console.error("Failed to delete file:", err);
+                showNotification("Failed to delete file: " + err, "error");
+            },
+            () => {
+                setDeleteFileDialogOpen(false);
+                setFileToDelete(null);
             }
-
-            showNotification(`File "${fileName}" deleted`, "success");
-        } catch (err) {
-            console.error("Failed to delete file:", err);
-            showNotification("Failed to delete file: " + err, "error");
-        } finally {
-            setDeleteFileDialogOpen(false);
-            setFileToDelete(null);
-        }
+        );
     };
 
     const handleDownloadImage = async () => {
