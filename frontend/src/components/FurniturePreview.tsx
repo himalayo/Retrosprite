@@ -345,7 +345,12 @@ export const FurniturePreview: React.FC<FurniturePreviewProps> = ({
         if (assetData && assetData.source) assetName = assetData.source;
 
         const fullSpriteKey = `${furnitureName}_${assetName}`;
-        const frameData = frames[fullSpriteKey];
+        let frameData = frames[fullSpriteKey];
+
+        // Fallback: Some tools add .png extension to frame keys
+        if (!frameData) {
+            frameData = frames[`${fullSpriteKey}.png`];
+        }
 
         if (frameData && assetData) {
             const sheetImage = jsonContent.spritesheet.meta.image;
@@ -458,6 +463,11 @@ export const FurniturePreview: React.FC<FurniturePreviewProps> = ({
         let fullSpriteKey = `${furnitureName}_${assetName}`;
         let frameData = frames[fullSpriteKey];
 
+        // Fallback: Some tools (like FurniExtractor) add .png extension to frame keys
+        if (!frameData) {
+            frameData = frames[`${fullSpriteKey}.png`];
+        }
+
         // Fallback: if the requested frame doesn't exist, try frame 0
         if (!frameData && currentFrame !== 0) {
             const layerChar = String.fromCharCode(97 + i); // a, b, c...
@@ -476,6 +486,11 @@ export const FurniturePreview: React.FC<FurniturePreviewProps> = ({
                 // Now try to find the frame
                 fullSpriteKey = `${furnitureName}_${fallbackAssetName}`;
                 frameData = frames[fullSpriteKey];
+
+                // Try with .png extension if still not found
+                if (!frameData) {
+                    frameData = frames[`${fullSpriteKey}.png`];
+                }
             }
         }
 

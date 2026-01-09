@@ -136,9 +136,14 @@ export const AssetEditor: React.FC<AssetEditorProps> = ({
 
         if (spritesheet.frames[key]) return spritesheet.frames[key];
 
+        // Try with .png extension (some tools add this to frame keys)
+        if (spritesheet.frames[`${key}.png`]) return spritesheet.frames[`${key}.png`];
+
         const frameKeys = Object.keys(spritesheet.frames);
         for (const fKey of frameKeys) {
-            if (fKey.endsWith(`_${key}`)) {
+            // Remove .png extension from frame key before checking
+            const cleanKey = fKey.replace(/\.png$/, '');
+            if (cleanKey.endsWith(`_${key}`)) {
                 return spritesheet.frames[fKey];
             }
         }

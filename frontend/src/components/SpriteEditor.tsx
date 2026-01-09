@@ -187,16 +187,25 @@ export const SpriteEditor: React.FC<SpriteEditorProps> = ({ jsonContent, imageCo
     // Load thumbnails on mount
     useEffect(() => {
         const loadThumbnails = async () => {
-            if (!jsonContent || !imageContent) return;
+            if (!jsonContent || !imageContent) {
+                console.log('[SpriteEditor] No content to load');
+                return;
+            }
+
+            console.log('[SpriteEditor] Loading thumbnails for:', jsonContent.name);
+            console.log('[SpriteEditor] Frame count in JSON:', jsonContent.spritesheet?.frames ? Object.keys(jsonContent.spritesheet.frames).length : 0);
 
             setLoading(true);
             try {
                 const files = prepareFilesForBackend(jsonContent, imageContent);
+                console.log('[SpriteEditor] Calling GenerateSpriteThumbnails...');
                 const thumbnails = await GenerateSpriteThumbnails(files);
+                console.log('[SpriteEditor] Received thumbnails:', thumbnails.length);
+                console.log('[SpriteEditor] Sample thumbnail names:', thumbnails.slice(0, 5).map(t => t.name));
                 setSprites(thumbnails);
                 setFilteredSprites(thumbnails);
             } catch (error) {
-                console.error('Failed to generate thumbnails:', error);
+                console.error('[SpriteEditor] Failed to generate thumbnails:', error);
             } finally {
                 setLoading(false);
             }
@@ -211,12 +220,21 @@ export const SpriteEditor: React.FC<SpriteEditorProps> = ({ jsonContent, imageCo
             const matchesQuery = sprite.name.toLowerCase().includes(searchQuery.toLowerCase());
 
             // Extract layer from sprite name: {name}_{size}_{layer}_{direction}_{frame}
-            const parts = sprite.name.split('_');
+            // Note: Some tools add .png extension, so we need to handle that
+            let spriteName = sprite.name;
+            if (spriteName.endsWith('.png')) {
+                spriteName = spriteName.slice(0, -4);
+            }
+            const parts = spriteName.split('_');
             const spriteLayer = parts.length >= 3 ? parts[parts.length - 3] : '';
             const matchesLayer = !layerFilter || spriteLayer === layerFilter;
 
             return matchesQuery && matchesLayer;
         });
+        console.log('[SpriteEditor] Filtered sprites:', filtered.length, 'from', sprites.length, 'total');
+        if (filtered.length === 0 && sprites.length > 0) {
+            console.log('[SpriteEditor] All sprites filtered out! LayerFilter:', layerFilter, 'SearchQuery:', searchQuery);
+        }
         setFilteredSprites(filtered);
     }, [searchQuery, layerFilter, sprites]);
 
@@ -400,7 +418,12 @@ export const SpriteEditor: React.FC<SpriteEditorProps> = ({ jsonContent, imageCo
     };
 
     const extractLayer = (spriteName: string): string => {
-        const parts = spriteName.split('_');
+        // Strip .png extension if present
+        let name = spriteName;
+        if (name.endsWith('.png')) {
+            name = name.slice(0, -4);
+        }
+        const parts = name.split('_');
         return parts.length >= 3 ? parts[parts.length - 3] : 'unknown';
     };
 

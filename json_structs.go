@@ -1,5 +1,41 @@
 package main
 
+import (
+	"encoding/json"
+	"strconv"
+)
+
+// FlexFloat is a custom type that can unmarshal both string and numeric JSON values
+type FlexFloat float64
+
+func (f *FlexFloat) UnmarshalJSON(data []byte) error {
+	// Try to unmarshal as a number first
+	var num float64
+	if err := json.Unmarshal(data, &num); err == nil {
+		*f = FlexFloat(num)
+		return nil
+	}
+
+	// If that fails, try as a string
+	var str string
+	if err := json.Unmarshal(data, &str); err != nil {
+		return err
+	}
+
+	// Parse the string as a float
+	num, err := strconv.ParseFloat(str, 64)
+	if err != nil {
+		return err
+	}
+
+	*f = FlexFloat(num)
+	return nil
+}
+
+func (f FlexFloat) MarshalJSON() ([]byte, error) {
+	return json.Marshal(float64(f))
+}
+
 type AssetData struct {
 	Type           string                   `json:"-"`
 	Name           string                   `json:"name,omitempty"`
@@ -19,12 +55,12 @@ type SpritesheetData struct {
 }
 
 type SpritesheetMeta struct {
-	App     string  `json:"app,omitempty"`
-	Version string  `json:"version,omitempty"`
-	Image   string  `json:"image"`
-	Format  string  `json:"format"`
-	Size    Size    `json:"size"`
-	Scale   float64 `json:"scale"`
+	App     string    `json:"app,omitempty"`
+	Version string    `json:"version,omitempty"`
+	Image   string    `json:"image"`
+	Format  string    `json:"format"`
+	Size    Size      `json:"size"`
+	Scale   FlexFloat `json:"scale"`
 }
 
 type Size struct {
