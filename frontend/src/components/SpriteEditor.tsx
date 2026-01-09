@@ -617,12 +617,18 @@ export const SpriteEditor: React.FC<SpriteEditorProps> = ({ jsonContent, imageCo
             }
 
             // Find and remove corresponding asset
-            // Sprite name format: {furniture}_{size}_{layer}_{direction}_{frame}
+            // Sprite name format in gallery: {furniture}_{furniture}_{size}_{layer}_{direction}_{frame}.png
             // Asset name format: {furniture}_{size}_{layer}_{direction}_{frame}
-            // They might match exactly, or the asset might have .png extension
             let assetKey = spriteName;
             if (spriteName.endsWith('.png')) {
                 assetKey = spriteName.slice(0, -4);
+            }
+
+            // Strip duplicate furniture name prefix if present
+            // Example: lizzy_block_01_lizzy_block_01_64_a_2_0 -> lizzy_block_01_64_a_2_0
+            const furnitureName = jsonContent.name || '';
+            if (furnitureName && assetKey.startsWith(`${furnitureName}_${furnitureName}_`)) {
+                assetKey = assetKey.replace(`${furnitureName}_`, '');
             }
 
             // Extract layer and frame info for animation cleanup
